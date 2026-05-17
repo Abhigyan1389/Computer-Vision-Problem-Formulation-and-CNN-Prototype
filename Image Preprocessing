@@ -1,0 +1,222 @@
+# ==========================================================
+# IMAGE DATA PREPROCESSING FOR MODEL TRAINING
+# ==========================================================
+
+# This script performs:
+# 1. Image resizing
+# 2. Pixel normalization
+# 3. Label encoding
+# 4. Train-test splitting
+# 5. Data augmentation
+
+# ==========================================================
+# IMPORT LIBRARIES
+# ==========================================================
+
+import pandas as pd
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+# ==========================================================
+# LOAD CSV FILE
+# ==========================================================
+
+# Replace with your CSV filename
+df = pd.read_csv("labels.csv")
+
+print("First 5 Rows:")
+print(df.head())
+
+# ==========================================================
+# DEFINE COLUMNS
+# ==========================================================
+
+image_col = 'filename'
+label_col = 'class'
+
+# ==========================================================
+# IMAGE SETTINGS
+# ==========================================================
+
+# Fixed image size
+IMG_HEIGHT = 128
+IMG_WIDTH = 128
+
+# ==========================================================
+# LOAD AND PREPROCESS IMAGES
+# ==========================================================
+
+images = []
+labels = []
+
+print("\nLoading and preprocessing images...")
+
+for index, row in df.iterrows():
+
+    img_path = row[image_col]
+    label = row[label_col]
+
+    try:
+        # --------------------------------------------------
+        # READ IMAGE
+        # --------------------------------------------------
+
+        img = cv2.imread(img_path)
+
+        # Convert BGR to RGB
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # --------------------------------------------------
+        # RESIZE IMAGE
+        # --------------------------------------------------
+
+        img = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
+
+        # --------------------------------------------------
+        # NORMALIZE PIXEL VALUES
+        # --------------------------------------------------
+
+        img = img / 255.0
+
+        # Store image and label
+        images.append(img)
+        labels.append(label)
+
+    except Exception as e:
+        print(f"Error loading image: {img_path}")
+        print(e)
+
+# Convert to NumPy arrays
+X = np.array(images)
+y = np.array(labels)
+
+print("\nImage Data Shape:", X.shape)
+print("Labels Shape:", y.shape)
+
+# ==========================================================
+# ENCODE LABELS
+# ==========================================================
+
+label_encoder = LabelEncoder()
+
+y_encoded = label_encoder.fit_transform(y)
+
+# Convert to one-hot encoding
+y_encoded = to_categorical(y_encoded)
+
+print("\nEncoded Labels Shape:", y_encoded.shape)
+
+print("\nClasses:")
+print(label_encoder.classes_)
+
+# ==========================================================
+# TRAIN-TEST SPLIT
+# ==========================================================
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y_encoded,
+    test_size=0.20,
+    random_state=42,
+    stratify=y
+)
+
+print("\n================================================")
+print("TRAIN-TEST SPLIT")
+print("================================================")
+
+print("Training Images :", X_train.shape)
+print("Testing Images  :", X_test.shape)
+
+# ==========================================================
+# DATA AUGMENTATION
+# ==========================================================
+
+# Augmentation helps improve model generalization
+
+train_datagen = ImageDataGenerator(
+
+    rotation_range=20,
+
+    zoom_range=0.15,
+
+    width_shift_range=0.10,
+
+    height_shift_range=0.10,
+
+    shear_range=0.10,
+
+    horizontal_flip=True,
+
+    fill_mode='nearest'
+)
+
+# No augmentation for test data
+test_datagen = ImageDataGenerator()
+
+# Create generators
+train_generator = train_datagen.flow(
+    X_train,
+    y_train,
+    batch_size=32
+)
+
+test_generator = test_datagen.flow(
+    X_test,
+    y_test,
+    batch_size=32,
+    shuffle=False
+)
+
+# ==========================================================
+# DISPLAY SAMPLE AUGMENTED IMAGES
+# ==========================================================
+
+print("\nDisplaying Augmented Images...")
+
+sample_batch = next(train_generator)
+
+sample_images = sample_batch[0]
+
+plt.figure(figsize=(12, 8))
+
+for i in range(6):
+
+    plt.subplot(2, 3, i+1)
+
+    plt.imshow(sample_images[i])
+
+    plt.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+# ==========================================================
+# FINAL SUMMARY
+# ==========================================================
+
+print("\n================================================")
+print("PREPROCESSING COMPLETED SUCCESSFULLY")
+print("================================================")
+
+print(f"Image Size          : {IMG_WIDTH} x {IMG_HEIGHT}")
+print(f"Number of Classes   : {len(label_encoder.classes_)}")
+print(f"Training Samples    : {len(X_train)}")
+print(f"Testing Samples     : {len(X_test)}")
+
+print("\nData Augmentation Applied:")
+print("- Rotation")
+print("- Zoom")
+print("- Width Shift")
+print("- Height Shift")
+print("- Shear")
+print("- Horizontal Flip")
+
+print("\nDataset is ready for CNN model training!")
