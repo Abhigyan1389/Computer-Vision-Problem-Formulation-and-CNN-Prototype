@@ -1,0 +1,31 @@
+Use in Retail
+Computer vision solutions like CNN-based image classification model can be widely used for automation, quality control, 
+customer analytics, and operational efficiency.
+This detects visual patterns from images, which is very useful in retail environments.
+This can help retailers automate product inspection, inventory monitoring, customer analytics, and smart checkout systems 
+by using CNNs to recognize products, defects, and visual patterns from images
+Use in Manufacturing
+Computer vision solutions like CNN-based defect detection model are extremely useful in the manufacturing domain because 
+they can automatically inspect products and detect defects from images in real time.
+In manufacturing, this computer vision solution can automatically inspect products, detect defects such as scratches or dents, 
+improve quality control, reduce manual inspection, and increase production efficiency using CNN-based image analysis.
+Use in Healthcare
+Computer vision solutions like CNN-based image classification are widely used in healthcare to analyze medical images 
+and assist doctors in diagnosis, detection, and monitoring of diseases.
+In healthcare, this type of computer vision solution can analyze medical images to detect diseases, tumors, abnormalities, 
+and other health conditions automatically using CNN-based image classification and pattern recognition
+Use in Agriculture
+Computer vision solutions like CNN-based image classification are widely used in agriculture to monitor crops, detect diseases,
+improve productivity, and automate farming tasks.
+In agriculture, this type of computer vision solution can detect plant diseases, monitor crop health, identify pests, 
+inspect produce quality, and automate farming operations using CNN-based image analysis.
+Use in Security
+Computer vision solutions like CNN-based image classification are widely used in security and surveillance systems to 
+automatically detect threats, recognize people or objects, and monitor suspicious activities from images or video feeds.
+In security, this type of computer vision solution can automatically detect faces, intrusions, suspicious activities, 
+weapons, and threats from images or surveillance footage using CNN-based image analysis and pattern recognition.
+Use in Autonomus vehicles
+Computer vision solutions like CNN-based image classification are one of the core technologies used in autonomous vehicles 
+(self-driving cars) to help vehicles understand their surroundings and make driving decisions automatically.
+In autonomous vehicles, this type of computer vision solution helps detect roads, vehicles, pedestrians, traffic signs,
+and obstacles so the vehicle can navigate and drive safely using CNN-based image analysis.
