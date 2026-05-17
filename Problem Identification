@@ -1,0 +1,3 @@
+The dataset represensts an image classification problem
+The problem is created because the dataset has image file paths in the filename column and category labels in the class column
+This dataset represents a Multi-Class Image Classification problem in the domain of Industrial Defect Detection/ SurfaceInspection
