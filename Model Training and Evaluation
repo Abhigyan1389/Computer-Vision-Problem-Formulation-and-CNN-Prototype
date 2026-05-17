@@ -1,0 +1,398 @@
+# ==========================================================
+# TRAIN AND EVALUATE CNN MODEL
+# ==========================================================
+
+# This script performs:
+# 1. CNN training
+# 2. Training accuracy/loss evaluation
+# 3. Validation accuracy/loss evaluation
+# 4. Testing performance
+# 5. Confusion matrix
+# 6. Sample predictions on test images
+
+# ==========================================================
+# IMPORT LIBRARIES
+# ==========================================================
+
+import pandas as pd
+import numpy as np
+import cv2
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import LabelEncoder
+from sklearn.metrics import (
+    confusion_matrix,
+    classification_report,
+    accuracy_score
+)
+
+from tensorflow.keras.utils import to_categorical
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import (
+    Conv2D,
+    MaxPooling2D,
+    Flatten,
+    Dense,
+    Dropout
+)
+
+from tensorflow.keras.optimizers import Adam
+
+# ==========================================================
+# LOAD DATASET
+# ==========================================================
+
+df = pd.read_csv("labels.csv")
+
+image_col = 'filename'
+label_col = 'class'
+
+# ==========================================================
+# IMAGE SETTINGS
+# ==========================================================
+
+IMG_HEIGHT = 128
+IMG_WIDTH = 128
+
+# ==========================================================
+# LOAD AND PREPROCESS IMAGES
+# ==========================================================
+
+images = []
+labels = []
+
+print("Loading images...")
+
+for index, row in df.iterrows():
+
+    img_path = row[image_col]
+    label = row[label_col]
+
+    try:
+        # Read image
+        img = cv2.imread(img_path)
+
+        # Convert BGR to RGB
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+
+        # Resize image
+        img = cv2.resize(img, (IMG_WIDTH, IMG_HEIGHT))
+
+        # Normalize image
+        img = img / 255.0
+
+        images.append(img)
+        labels.append(label)
+
+    except Exception as e:
+        print(f"Error loading image: {img_path}")
+        print(e)
+
+# Convert to arrays
+X = np.array(images)
+y = np.array(labels)
+
+print("Image Shape:", X.shape)
+
+# ==========================================================
+# ENCODE LABELS
+# ==========================================================
+
+label_encoder = LabelEncoder()
+
+y_encoded = label_encoder.fit_transform(y)
+
+class_names = label_encoder.classes_
+
+# One-hot encoding
+y_categorical = to_categorical(y_encoded)
+
+# ==========================================================
+# TRAIN-TEST SPLIT
+# ==========================================================
+
+X_train, X_test, y_train, y_test = train_test_split(
+    X,
+    y_categorical,
+    test_size=0.20,
+    random_state=42,
+    stratify=y_encoded
+)
+
+# ==========================================================
+# DATA AUGMENTATION
+# ==========================================================
+
+train_datagen = ImageDataGenerator(
+    rotation_range=20,
+    zoom_range=0.15,
+    width_shift_range=0.1,
+    height_shift_range=0.1,
+    horizontal_flip=True
+)
+
+test_datagen = ImageDataGenerator()
+
+train_generator = train_datagen.flow(
+    X_train,
+    y_train,
+    batch_size=32
+)
+
+test_generator = test_datagen.flow(
+    X_test,
+    y_test,
+    batch_size=32,
+    shuffle=False
+)
+
+# ==========================================================
+# BUILD CNN MODEL
+# ==========================================================
+
+model = Sequential()
+
+# Convolution Block 1
+model.add(Conv2D(
+    32,
+    (3,3),
+    activation='relu',
+    input_shape=(IMG_HEIGHT, IMG_WIDTH, 3)
+))
+
+model.add(MaxPooling2D((2,2)))
+
+# Convolution Block 2
+model.add(Conv2D(
+    64,
+    (3,3),
+    activation='relu'
+))
+
+model.add(MaxPooling2D((2,2)))
+
+# Convolution Block 3
+model.add(Conv2D(
+    128,
+    (3,3),
+    activation='relu'
+))
+
+model.add(MaxPooling2D((2,2)))
+
+# Flatten Layer
+model.add(Flatten())
+
+# Dense Layer
+model.add(Dense(
+    128,
+    activation='relu'
+))
+
+# Dropout
+model.add(Dropout(0.5))
+
+# Output Layer
+model.add(Dense(
+    len(class_names),
+    activation='softmax'
+))
+
+# ==========================================================
+# COMPILE MODEL
+# ==========================================================
+
+model.compile(
+    optimizer=Adam(learning_rate=0.001),
+
+    loss='categorical_crossentropy',
+
+    metrics=['accuracy']
+)
+
+# ==========================================================
+# MODEL SUMMARY
+# ==========================================================
+
+print("\n================================================")
+print("CNN MODEL SUMMARY")
+print("================================================")
+
+model.summary()
+
+# ==========================================================
+# TRAIN MODEL
+# ==========================================================
+
+history = model.fit(
+    train_generator,
+
+    epochs=15,
+
+    validation_data=test_generator,
+
+    verbose=1
+)
+
+# ==========================================================
+# PLOT TRAINING & VALIDATION CURVES
+# ==========================================================
+
+# Accuracy Plot
+plt.figure(figsize=(8,5))
+
+plt.plot(history.history['accuracy'], label='Training Accuracy')
+plt.plot(history.history['val_accuracy'], label='Validation Accuracy')
+
+plt.title("Training vs Validation Accuracy")
+plt.xlabel("Epoch")
+plt.ylabel("Accuracy")
+
+plt.legend()
+
+plt.show()
+
+# Loss Plot
+plt.figure(figsize=(8,5))
+
+plt.plot(history.history['loss'], label='Training Loss')
+plt.plot(history.history['val_loss'], label='Validation Loss')
+
+plt.title("Training vs Validation Loss")
+plt.xlabel("Epoch")
+plt.ylabel("Loss")
+
+plt.legend()
+
+plt.show()
+
+# ==========================================================
+# TESTING PERFORMANCE
+# ==========================================================
+
+test_loss, test_accuracy = model.evaluate(
+    test_generator,
+    verbose=0
+)
+
+print("\n================================================")
+print("TESTING PERFORMANCE")
+print("================================================")
+
+print("Test Accuracy :", round(test_accuracy, 4))
+print("Test Loss     :", round(test_loss, 4))
+
+# ==========================================================
+# PREDICTIONS
+# ==========================================================
+
+pred_probs = model.predict(test_generator)
+
+pred_classes = np.argmax(pred_probs, axis=1)
+
+true_classes = np.argmax(y_test, axis=1)
+
+# ==========================================================
+# CLASSIFICATION REPORT
+# ==========================================================
+
+print("\n================================================")
+print("CLASSIFICATION REPORT")
+print("================================================")
+
+print(classification_report(
+    true_classes,
+    pred_classes,
+    target_names=class_names
+))
+
+# ==========================================================
+# CONFUSION MATRIX
+# ==========================================================
+
+cm = confusion_matrix(
+    true_classes,
+    pred_classes
+)
+
+plt.figure(figsize=(8,6))
+
+sns.heatmap(
+    cm,
+    annot=True,
+    fmt='d',
+    cmap='Blues',
+    xticklabels=class_names,
+    yticklabels=class_names
+)
+
+plt.title("Confusion Matrix")
+
+plt.xlabel("Predicted Label")
+plt.ylabel("True Label")
+
+plt.show()
+
+# ==========================================================
+# SAMPLE PREDICTIONS
+# ==========================================================
+
+print("\n================================================")
+print("SAMPLE PREDICTIONS")
+print("================================================")
+
+plt.figure(figsize=(15,10))
+
+for i in range(9):
+
+    plt.subplot(3,3,i+1)
+
+    plt.imshow(X_test[i])
+
+    true_label = class_names[np.argmax(y_test[i])]
+    predicted_label = class_names[pred_classes[i]]
+
+    plt.title(f"True: {true_label}\nPred: {predicted_label}")
+
+    plt.axis('off')
+
+plt.tight_layout()
+plt.show()
+
+# ==========================================================
+# FINAL INTERPRETATION
+# ==========================================================
+
+print("""
+=========================================================
+MODEL EVALUATION SUMMARY
+=========================================================
+
+1. Training Accuracy:
+   - Measures performance on training data
+
+2. Validation Accuracy:
+   - Measures generalization ability
+
+3. Training/Validation Loss:
+   - Lower loss indicates better learning
+
+4. Confusion Matrix:
+   - Shows correct and incorrect predictions
+
+5. Sample Predictions:
+   - Visual verification of model predictions
+
+6. Overfitting Check:
+   - Large gap between training and validation
+     accuracy indicates overfitting
+
+7. Underfitting Check:
+   - Low training and validation accuracy
+     indicates underfitting
+=========================================================
+""")
